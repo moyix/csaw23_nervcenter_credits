@@ -1,0 +1,17 @@
+# Extract op frames
+ffmpeg -i ../\[Sephirotic\]\ Evangelion\ -\ 13\ \[MULTI\]\[BD\ 1080p\ 8bits\ 5.1\ AAC\]\[E4AD143C\].mkv -t 00:01:30 frame_%08d.png
+
+# Extract ASS subs
+ffmpeg -i ../\[Sephirotic\]\ Evangelion\ -\ 13\ \[MULTI\]\[BD\ 1080p\ 8bits\ 5.1\ AAC\]\[E4AD143C\].mkv -map 0:3 -c copy eva_subs.ass
+
+# Extract karaoke only
+grep '{\\k' eva_subs.ass | cut -d, -f 2,3,10- | sed 's/{\\[^k][^{]*}//g' > karaoke.txt
+
+# Resize frames to 100px
+for f in *.png ; do echo $f ; convert -resize 100x "$f" small/"$f" ; done
+
+# Render subtitles
+python ./subtitle_render.py -k karaoke.txt -g center -o '+0+0' -O subs/ small/frame_0000*.png
+
+# Play them
+time (printf '\033[H\033[2J\033[3J' ; printf '\e[?25l'; for f in subs/*.txt ; do cat "$f" ; sleep .03 ; done ; printf '\e[?25h')
