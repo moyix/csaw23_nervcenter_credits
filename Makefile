@@ -1,6 +1,6 @@
 ALL_CARDS = $(patsubst src_img/%.png, cards/%.png, $(wildcard src_img/*.png))
 
-cards/%.png: src_img/%.png
+cards/%.png: src_img/%.png card_scripts/make_%.sh
 	./card_scripts/make_$*.sh $< $@
 
 all_cards: $(ALL_CARDS)
