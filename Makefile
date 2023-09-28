@@ -5,7 +5,7 @@ cards/%.png: src_img/%.png
 
 all_cards: $(ALL_CARDS)
 
-subs: all_cards karaoke.txt subtitle_render.py
+subs: all_cards orig_subs/karaoke.txt subtitle_render.py
 	./subtitle_render.py $(FROM) $(TO) $(RENDER_FLAGS) --rm -k orig_subs/karaoke.txt -O subs/ small/frame_0000*.png
 
 play: subs
