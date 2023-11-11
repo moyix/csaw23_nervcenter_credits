@@ -44,7 +44,7 @@ test_subs = [
                  proprietary=json.dumps(
                      {"gravity": ["north", "south", "south", "south"],
                       "offset": ["+0-2", "+0+2", "+4+2", "+28+2"],
-                      "fill": ["red", "green", "purple", "white"],
+                      "fill": ["red", "purple", "green", "white"],
                       "stroke": ["white", "none", "none", "black"],
                       "size": [13,14,14,14],
                       "font": ["Arial-Black", "Iosevka-Heavy","Iosevka-Heavy","Iosevka-Heavy"],})),
@@ -54,7 +54,7 @@ test_subs = [
     CreditSubtitle(timedelta(seconds=38), timedelta(seconds=42), 'Crypto Consult', 'Marco Macchetti'),
     CreditSubtitle(timedelta(seconds=43), timedelta(seconds=47), 'Crypto Consult', 'Tommaso\nGagliardoni',
                    offset=["+0-16", "+0+8"], size=[12, 13]),
-    CreditSubtitle(timedelta(seconds=47.8), timedelta(seconds=51.5), 'Inspiration', 'Flip Feng Shui\nUSENIX’16', offset=["+0-22", "+0+8"]),
+    CreditSubtitle(timedelta(seconds=47.8), timedelta(seconds=51.5), 'Inspiration', 'Flip Feng Shui\nUSENIX SEC ’16', offset=["+0-22", "+0+8"]),
     CreditSubtitle(timedelta(seconds=53), timedelta(seconds=57), 'Inspiration', 'RedHat Bugzilla\n892977\n(QEMU)', offset=["+0-22", "+0+8"]),
     srt.Subtitle(None, start=timedelta(seconds=60), end=timedelta(seconds=65),content='IMG:cards/hearts.png'),
     srt.Subtitle(None, start=timedelta(seconds=85), end=timedelta(seconds=90),content='IMG:cards/gideon.png'),
@@ -350,6 +350,8 @@ def main():
     parser.add_argument('--from', default=None, dest='start_time', help='start time (HH:MM:SS)')
     parser.add_argument('--to', default=None, dest='end_time', help='end time (HH:MM:SS)')
     parser.add_argument('-e', '--export', default=None, help='export subtitles to an SRT file')
+    parser.add_argument('--by-name', default=None, action='append', nargs='?',
+                        help='select start and end times by matching subtitle text (1 second padding)')
     args = parser.parse_args()
 
     keep_pngs = args.keep_pngs
@@ -390,7 +392,7 @@ def main():
     for i, img in enumerate(args.images):
         timeline.append(TimelineEntry(i*time_per_frame, (i+1)*time_per_frame, img, {}))
 
-    print(f"Video length: {timeline[-1].end}")
+    print(f" Video length: {timeline[-1].end} ({len(timeline)} frames)")
 
     # Parse the karaoke file
     if args.karaoke is not None:
@@ -413,7 +415,19 @@ def main():
         timeline = [t for t in timeline if t.end >= parse_karaoke_time(args.start_time)]
     if args.end_time is not None:
         timeline = [t for t in timeline if t.start < parse_karaoke_time(args.end_time)]
-
+    if args.by_name:
+        matches = []
+        for s in subs:
+            for b in args.by_name:
+                content = s.extra.get('subtitle', None)
+                if b in content:
+                    matches.append(s)
+        if len(matches) == 0:
+            raise ValueError(f"No subtitle matches '{args.by_name}'")
+        st = min([m.start for m in matches]) - timedelta(seconds=1)
+        et = max([m.end for m in matches]) + timedelta(seconds=1)
+        timeline = [t for t in timeline if t.start >= st and t.end <= et]
+    print(f"Render length: {timeline[-1].end - timeline[0].start} ({len(timeline)} frames)")
     # Set up output directory
     if args.rm:
         shutil.rmtree(args.output)
